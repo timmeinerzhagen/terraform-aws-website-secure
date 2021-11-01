@@ -1,4 +1,4 @@
-# terraform-aws-website
+# WIP terraform-aws-website-secure
 Creates a public or private website behind a cloudfront distribution, with SSL enabled, including support for multiple domain names (e.g. www.example.com as well as example.com). CORS is also configured for you. Cognito hosted UI is put in front of it.
 
 The website files are hosted in an S3 bucket which is also created by the module.
