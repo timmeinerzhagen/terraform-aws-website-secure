@@ -1,16 +1,16 @@
 locals {
   cspString = join("; ", [for k, v in {
-    default : concat(local.is_cognito ? [local.auth_base_url] : [], var.csp_allow_default),
-    script : var.csp_allow_script,
-    style : var.csp_allow_style,
-    img : var.csp_allow_img,
-    font : var.csp_allow_font,
-    frame : var.csp_allow_frame,
-    manifest : concat(local.is_cognito ? [local.auth_base_url] : [], var.csp_allow_manifest),
-    connect : var.csp_allow_connect,
+    default : concat(["self"], var.csp.allow_default),
+    script : var.csp.allow_script,
+    style : var.csp.allow_style,
+    img : var.csp.allow_img,
+    font : var.csp.allow_font,
+    frame : var.csp.allow_frame,
+    manifest : concat(["self"], var.csp.allow_manifest),
+    connect : var.csp.allow_connect,
   } : "${k}-src ${join(" ", concat(["'self'"], v))}"])
   headers = {
-    Cache-Control : "public, max-age=${var.cache_control_max_age_seconds}"
+    Cache-Control : "public, max-age=${var.cloudfront_cache_duration}"
     Content-Security-Policy   = local.cspString
     Strict-Transport-Security = "max-age=63072000; includeSubdomains; preload"
     X-Content-Type-Options    = "nosniff"
@@ -33,47 +33,23 @@ module "lambda_edge_function" {
 
   source = "./modules/lambda_edge_function"
 
+  function_name    = "${var.name}-${each.value}"
   bundle_file_name = "${path.module}/external/cloudfront-authorization-at-edge/${each.value}.js"
-  configuration = {
-    userPoolArn             = local.user_pool_arn,
-    clientId                = local.cognito_client_id,
-    clientSecret            = "",
-    oauthScopes             = var.oauth_scopes,
-    cognitoAuthDomain       = local.auth_domain,
-    redirectPathSignIn      = var.parse_auth_path,
-    redirectPathSignOut     = var.logout_path,
-    redirectPathAuthRefresh = var.refresh_auth_path,
-    cookieSettings          = local.cookie_settings,
-    mode                    = "spaMode",
-    httpHeaders             = local.headers,
-    logLevel                = var.log_level,
-    nonceSigningSecret      = local.is_cognito ? random_password.nonce_secret[0].result : "",
-    cookieCompatibility     = "amplify",
-    additionalCookies       = {},
-    requiredGroup           = "",
-    allowOmitHtmlExtension  = var.allow_omit_html_extension
-    basicAuthUsername       = local.is_basic_auth ? var.basic_auth_username : ""
-    basicAuthPassword       = local.is_basic_auth ? var.basic_auth_password : ""
-  }
-  function_name   = "${var.deployment_name}-${each.value}"
-  lambda_role_arn = aws_iam_role.iam_for_lambda_edge.arn
+  lambda_role_arn  = aws_iam_role.iam_for_lambda_edge.arn
 
   providers = {
     aws = aws.us-east-1
   }
 }
 
-
 resource "random_password" "nonce_secret" {
-  count            = local.is_cognito ? 1 : 0
   length           = 16
   special          = true
   override_special = "-._~"
 }
 
-
 resource "aws_iam_role" "iam_for_lambda_edge" {
-  name               = "${var.deployment_name}-iam_for_lambda_edge"
+  name               = "${var.name}-iam_for_lambda_edge"
   provider           = aws.us-east-1
   assume_role_policy = <<EOF
 {
@@ -98,7 +74,7 @@ EOF
 
 /* Policy attached to lambda execution role to allow logging */
 resource "aws_iam_role_policy" "lambda_log_policy" {
-  name = "${var.deployment_name}-lambda_log_policy"
+  name = "${var.name}-lambda_log_policy"
   role = aws_iam_role.iam_for_lambda_edge.id
 
   policy = <<EOF

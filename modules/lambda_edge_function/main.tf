@@ -15,21 +15,17 @@ data "archive_file" "lambda_edge_zip" {
     content  = file(var.bundle_file_name)
     filename = "main.js"
   }
-
-  source {
-    content  = jsonencode(var.configuration)
-    filename = "configuration.json"
-  }
 }
 
 resource "aws_lambda_function" "lambda_edge_function" {
-  description      = var.description
-  filename         = data.archive_file.lambda_edge_zip.output_path
   function_name    = var.function_name
-  role             = var.lambda_role_arn
-  handler          = "main.${var.handler_name}"
-  runtime          = "nodejs12.x"
+
+  filename         = data.archive_file.lambda_edge_zip.output_path
   source_code_hash = data.archive_file.lambda_edge_zip.output_base64sha256
+  handler          = "main.handler"
+  runtime          = "nodejs12.x"
+  role             = var.lambda_role_arn
+  
   timeout          = 5
   memory_size      = 128
   publish          = true
