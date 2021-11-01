@@ -3,5 +3,3 @@
 *.tfvars 
 .terraform 
 terraform.exe 
-
-cloudfront-authorization-at-edge/
