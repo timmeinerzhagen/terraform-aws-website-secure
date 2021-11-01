@@ -26,10 +26,6 @@ variable "configuration" {
     cookieCompatibility = string,
     additionalCookies = map(string),
     requiredGroup = string,
-    redirects = list(object({
-      source = string
-      target = string
-    }))
     allowOmitHtmlExtension = bool
     basicAuthUsername = string
     basicAuthPassword = string
