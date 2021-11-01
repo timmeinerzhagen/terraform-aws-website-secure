@@ -4,20 +4,20 @@ locals {
 
 output "url" {
   description = "URL of the main website"
-  value = local.url
+  value       = local.url
 }
 
 output "alternate_urls" {
   description = "Alternate URLs of the website"
-  value = formatlist("https://%s", var.alternative_custom_domains)
+  value       = formatlist("https://%s", var.alternative_custom_domains)
 }
 
 output "user_pool_arn" {
   description = "ARN of Cognito user pool being used"
-  value = local.user_pool_arn
+  value       = local.user_pool_arn
 }
 
 output "data_bucket_name" {
   description = "Data bucket name, if create_data_bucket input is true"
-  value = var.create_data_bucket ? aws_s3_bucket.data[0].bucket : ""
+  value       = var.create_data_bucket ? aws_s3_bucket.data[0].bucket : ""
 }

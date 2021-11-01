@@ -29,8 +29,8 @@ locals {
 /* S3 buckets for frontend */
 data "aws_iam_policy_document" "s3_website" {
   statement {
-    effect = "Allow"
-    actions = ["s3:GetObject"]
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
     resources = ["${aws_s3_bucket.website.arn}/*"]
     principals {
       type        = "AWS"
@@ -38,8 +38,8 @@ data "aws_iam_policy_document" "s3_website" {
     }
   }
   statement {
-    effect = "Allow"
-    actions = ["s3:ListBucket"]
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
     resources = [aws_s3_bucket.website.arn]
     principals {
       type        = "AWS"
@@ -52,8 +52,8 @@ data "aws_iam_policy_document" "s3_data" {
   count = var.create_data_bucket ? 1 : 0
 
   statement {
-    effect = "Allow"
-    actions = ["s3:GetObject"]
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
     resources = ["${aws_s3_bucket.data[0].arn}/*"]
     principals {
       type        = "AWS"
@@ -61,8 +61,8 @@ data "aws_iam_policy_document" "s3_data" {
     }
   }
   statement {
-    effect = "Allow"
-    actions = ["s3:ListBucket"]
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
     resources = [aws_s3_bucket.data[0].arn]
     principals {
       type        = "AWS"
@@ -91,10 +91,10 @@ resource "aws_s3_bucket" "website" {
 resource "aws_s3_bucket_public_access_block" "block_direct_access" {
   bucket = aws_s3_bucket.website.id
 
-  block_public_acls = true
-  block_public_policy = true
+  block_public_acls       = true
+  block_public_policy     = true
   restrict_public_buckets = true
-  ignore_public_acls = true
+  ignore_public_acls      = true
 }
 
 resource "aws_s3_bucket" "data" {
@@ -110,10 +110,10 @@ resource "aws_s3_bucket_public_access_block" "block_direct_access_data" {
 
   bucket = aws_s3_bucket.data[0].id
 
-  block_public_acls = true
-  block_public_policy = true
+  block_public_acls       = true
+  block_public_policy     = true
   restrict_public_buckets = true
-  ignore_public_acls = true
+  ignore_public_acls      = true
 }
 
 resource "aws_s3_bucket" "website_alternative_redirect" {
@@ -168,22 +168,22 @@ resource "aws_s3_bucket_object" "website_additional_files" {
 
 locals {
   auth_config = jsonencode({
-    region = data.aws_region.current.name
-    userPoolId = local.user_pool_id
+    region              = data.aws_region.current.name
+    userPoolId          = local.user_pool_id
     userPoolWebClientId = local.cognito_client_id
-    authDomain = local.auth_domain
-    scopes = var.oauth_scopes
-    redirectSignIn = var.parse_auth_path
-    redirectSignOut = var.logout_path
+    authDomain          = local.auth_domain
+    scopes              = var.oauth_scopes
+    redirectSignIn      = var.parse_auth_path
+    redirectSignOut     = var.logout_path
   })
 }
 resource "aws_s3_bucket_object" "auth_configuration" {
   count = local.is_cognito ? 1 : 0
 
-  bucket = aws_s3_bucket.website.id
-  acl = "private"
+  bucket       = aws_s3_bucket.website.id
+  acl          = "private"
   content_type = lookup(local.mime_types, "json")
-  key = var.auth_config_path
-  content = local.auth_config
-  etag = md5(local.auth_config)
+  key          = var.auth_config_path
+  content      = local.auth_config
+  etag         = md5(local.auth_config)
 }

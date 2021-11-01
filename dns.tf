@@ -9,9 +9,9 @@ data "aws_route53_zone" "hosted_zone" {
 }
 
 resource "aws_acm_certificate" "ssl_certificate" {
-  domain_name       = var.custom_domain
+  domain_name               = var.custom_domain
   subject_alternative_names = var.alternative_custom_domains
-  validation_method = "DNS"
+  validation_method         = "DNS"
 
   lifecycle {
     create_before_destroy = true
@@ -25,10 +25,10 @@ resource "aws_acm_certificate" "ssl_certificate" {
 
 resource "aws_route53_record" "ssl_cert_validation" {
   for_each = {
-    for dvo in aws_acm_certificate.ssl_certificate.domain_validation_options: dvo.domain_name => {
-      name = dvo.resource_record_name
+    for dvo in aws_acm_certificate.ssl_certificate.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
       record = dvo.resource_record_value
-      type = dvo.resource_record_type
+      type   = dvo.resource_record_type
     }
   }
 
@@ -43,8 +43,8 @@ resource "aws_route53_record" "ssl_cert_validation" {
 
 resource "aws_acm_certificate_validation" "main_website_cert" {
   certificate_arn         = aws_acm_certificate.ssl_certificate.arn
-  validation_record_fqdns = [for validation in aws_route53_record.ssl_cert_validation: validation.fqdn]
-  provider = aws.us-east-1
+  validation_record_fqdns = [for validation in aws_route53_record.ssl_cert_validation : validation.fqdn]
+  provider                = aws.us-east-1
 }
 
 resource "aws_route53_record" "main_website_A" {

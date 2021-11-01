@@ -1,22 +1,22 @@
 locals {
   cspString = join("; ", [for k, v in {
-    default: concat(local.is_cognito ? [local.auth_base_url] : [], var.csp_allow_default),
-    script: var.csp_allow_script,
-    style: var.csp_allow_style,
-    img: var.csp_allow_img,
-    font: var.csp_allow_font,
-    frame: var.csp_allow_frame,
-    manifest: concat(local.is_cognito ? [local.auth_base_url] : [], var.csp_allow_manifest),
-    connect: var.csp_allow_connect,
-  }: "${k}-src ${join(" ", concat(["'self'"], v))}"])
+    default : concat(local.is_cognito ? [local.auth_base_url] : [], var.csp_allow_default),
+    script : var.csp_allow_script,
+    style : var.csp_allow_style,
+    img : var.csp_allow_img,
+    font : var.csp_allow_font,
+    frame : var.csp_allow_frame,
+    manifest : concat(local.is_cognito ? [local.auth_base_url] : [], var.csp_allow_manifest),
+    connect : var.csp_allow_connect,
+  } : "${k}-src ${join(" ", concat(["'self'"], v))}"])
   headers = {
-    Cache-Control: "public, max-age=${var.cache_control_max_age_seconds}"
-    Content-Security-Policy = local.cspString
+    Cache-Control : "public, max-age=${var.cache_control_max_age_seconds}"
+    Content-Security-Policy   = local.cspString
     Strict-Transport-Security = "max-age=63072000; includeSubdomains; preload"
-    X-Content-Type-Options = "nosniff"
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    Referrer-Policy = "strict-origin"
+    X-Content-Type-Options    = "nosniff"
+    X-Frame-Options           = "DENY"
+    X-XSS-Protection          = "1; mode=block"
+    Referrer-Policy           = "strict-origin"
   }
   cookie_settings = <<EOF
 {
@@ -35,39 +35,39 @@ module "lambda_edge_function" {
 
   bundle_file_name = "${path.module}/external/cloudfront-authorization-at-edge/${each.value}.js"
   configuration = {
-    userPoolArn = local.user_pool_arn,
-    clientId = local.cognito_client_id,
-    clientSecret = "",
-    oauthScopes = var.oauth_scopes,
-    cognitoAuthDomain = local.auth_domain,
-    redirectPathSignIn = var.parse_auth_path,
-    redirectPathSignOut = var.logout_path,
+    userPoolArn             = local.user_pool_arn,
+    clientId                = local.cognito_client_id,
+    clientSecret            = "",
+    oauthScopes             = var.oauth_scopes,
+    cognitoAuthDomain       = local.auth_domain,
+    redirectPathSignIn      = var.parse_auth_path,
+    redirectPathSignOut     = var.logout_path,
     redirectPathAuthRefresh = var.refresh_auth_path,
-    cookieSettings = local.cookie_settings,
-    mode = "spaMode",
-    httpHeaders = local.headers,
-    logLevel = var.log_level,
-    nonceSigningSecret = local.is_cognito ? random_password.nonce_secret[0].result : "",
-    cookieCompatibility = "amplify",
-    additionalCookies = {},
-    requiredGroup = "",
-    allowOmitHtmlExtension = var.allow_omit_html_extension
-    basicAuthUsername = local.is_basic_auth ? var.basic_auth_username : ""
-    basicAuthPassword = local.is_basic_auth ? var.basic_auth_password : ""
+    cookieSettings          = local.cookie_settings,
+    mode                    = "spaMode",
+    httpHeaders             = local.headers,
+    logLevel                = var.log_level,
+    nonceSigningSecret      = local.is_cognito ? random_password.nonce_secret[0].result : "",
+    cookieCompatibility     = "amplify",
+    additionalCookies       = {},
+    requiredGroup           = "",
+    allowOmitHtmlExtension  = var.allow_omit_html_extension
+    basicAuthUsername       = local.is_basic_auth ? var.basic_auth_username : ""
+    basicAuthPassword       = local.is_basic_auth ? var.basic_auth_password : ""
   }
-  function_name = "${var.deployment_name}-${each.value}"
+  function_name   = "${var.deployment_name}-${each.value}"
   lambda_role_arn = aws_iam_role.iam_for_lambda_edge.arn
 
   providers = {
     aws = aws.us-east-1
-  } 
+  }
 }
 
 
 resource "random_password" "nonce_secret" {
-  count = local.is_cognito ? 1 : 0
-  length = 16
-  special = true
+  count            = local.is_cognito ? 1 : 0
+  length           = 16
+  special          = true
   override_special = "-._~"
 }
 
@@ -121,4 +121,4 @@ resource "aws_iam_role_policy" "lambda_log_policy" {
     ]
 }
 EOF
-  }
+}
