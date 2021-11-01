@@ -31,7 +31,7 @@ EOF
 module "lambda_edge_function" {
   for_each = setunion(local.is_cognito ? toset(["check-auth", "http-headers", "parse-auth", "refresh-auth", "sign-out"]) : var.is_private ? toset(["check-auth-basic", "http-headers"]) : toset(["http-headers"]), local.use_origin_request ? toset(["redirects"]) : toset([]))
 
-  source = "./lambda_edge_function"
+  source = "./modules/lambda_edge_function"
 
   bundle_file_name = "${path.module}/cloudfront-authorization-at-edge/dist/${each.value}.js"
   configuration = {

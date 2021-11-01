@@ -3,7 +3,7 @@ data "aws_region" "current" {}
 module "cognito_auth" {
   count = local.is_cognito && var.create_cognito_pool ? 1 : 0
 
-  source = "./cognito"
+  source = "./modules/cognito"
 
   auth_domain_prefix = var.auth_domain_prefix
   callback_urls = concat(["${local.url}${var.parse_auth_path}"], formatlist("%s${var.parse_auth_path}", var.additional_redirect_urls))
