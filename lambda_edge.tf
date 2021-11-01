@@ -60,7 +60,7 @@ module "lambda_edge_function" {
   lambda_role_arn = aws_iam_role.iam_for_lambda_edge.arn
 
   providers = {
-    aws.us-east-1 = aws.us-east-1
+    aws = aws-us-east-1
   }
 }
 
@@ -75,7 +75,7 @@ resource "random_password" "nonce_secret" {
 
 resource "aws_iam_role" "iam_for_lambda_edge" {
   name               = "${var.deployment_name}-iam_for_lambda_edge"
-  provider           = aws.us-east-1
+  provider           = aws-us-east-1
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",

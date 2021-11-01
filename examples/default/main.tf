@@ -7,7 +7,7 @@ provider "aws" {
 }
 
 module "test_website" {
-  source = "./.."
+  source = "./../.."
 
   custom_domain = ""
   deployment_name = ""
@@ -15,6 +15,6 @@ module "test_website" {
   website_dir = ""
 
   providers = {
-    aws.us-east-1: aws.us-east-1
+    aws-us-east-1: aws.us-east-1
   }
 }

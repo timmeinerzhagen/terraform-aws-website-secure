@@ -20,7 +20,7 @@ resource "aws_acm_certificate" "ssl_certificate" {
     Name = var.custom_domain
   }
 
-  provider = aws.us-east-1
+  provider = aws-us-east-1
 }
 
 resource "aws_route53_record" "ssl_cert_validation" {
@@ -38,13 +38,13 @@ resource "aws_route53_record" "ssl_cert_validation" {
   records = [each.value.record]
   ttl     = 60
 
-  provider = aws.us-east-1
+  provider = aws-us-east-1
 }
 
 resource "aws_acm_certificate_validation" "main_website_cert" {
   certificate_arn         = aws_acm_certificate.ssl_certificate.arn
   validation_record_fqdns = [for validation in aws_route53_record.ssl_cert_validation: validation.fqdn]
-  provider                = aws.us-east-1
+  provider                = aws-us-east-1
 }
 
 resource "aws_route53_record" "main_website_A" {

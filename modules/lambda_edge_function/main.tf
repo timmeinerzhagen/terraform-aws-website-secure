@@ -3,7 +3,6 @@ terraform {
     aws = {
       source = "hashicorp/aws"
       version = ">= 3.50.0, < 4.0.0"
-      configuration_aliases = [aws.us-east-1]
     }
   }
 }
@@ -34,5 +33,4 @@ resource "aws_lambda_function" "lambda_edge_function" {
   timeout          = 5
   memory_size      = 128
   publish          = true
-  provider         = aws.us-east-1
 }
