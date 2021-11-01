@@ -33,7 +33,7 @@ module "lambda_edge_function" {
 
   source = "./modules/lambda_edge_function"
 
-  bundle_file_name = "${path.module}/cloudfront-authorization-at-edge/dist/${each.value}.js"
+  bundle_file_name = "${path.module}/external/cloudfront-authorization-at-edge/${each.value}.js"
   configuration = {
     userPoolArn = local.user_pool_arn,
     clientId = local.cognito_client_id,
