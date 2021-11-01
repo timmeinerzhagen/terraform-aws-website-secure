@@ -29,7 +29,7 @@ EOF
 }
 
 module "lambda_edge_function" {
-  for_each = setunion(local.is_cognito ? toset(["check-auth", "http-headers", "parse-auth", "refresh-auth", "sign-out"]) : var.is_private ? toset(["check-auth-basic", "http-headers"]) : toset(["http-headers"]), local.use_origin_request ? toset(["redirects"]) : toset([]))
+  for_each = setunion(toset(["check-auth", "http-headers", "parse-auth", "refresh-auth", "rewrite-trailing-slash", "sign-out"]))
 
   source = "./modules/lambda_edge_function"
 
@@ -51,7 +51,6 @@ module "lambda_edge_function" {
     cookieCompatibility = "amplify",
     additionalCookies = {},
     requiredGroup = "",
-    redirects = var.redirects,
     allowOmitHtmlExtension = var.allow_omit_html_extension
     basicAuthUsername = local.is_basic_auth ? var.basic_auth_username : ""
     basicAuthPassword = local.is_basic_auth ? var.basic_auth_password : ""

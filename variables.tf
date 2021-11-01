@@ -205,18 +205,6 @@ variable "log_level" {
   }
 }
 
-
-
-variable "redirects" {
-  description = "List of redirects specifying source and target URLs"
-  default = null
-  type = list(object({
-    source = string
-    target = string
-  }))
-}
-
-
 variable "allow_omit_html_extension" {
   description = "Boolean, default false. If true, any URL where the final part does not contain a `.` will reference the S3 object with `html` appended. For example `https://example.com/home` would retrieve the file `home.html` from the website S3 bucket."
   default = false

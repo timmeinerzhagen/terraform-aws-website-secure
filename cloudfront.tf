@@ -102,14 +102,10 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
       include_body = false
     }
 
-    dynamic "lambda_function_association" {
-      for_each = local.use_origin_request ? [
-        0] : []
-      content {
-        event_type = "origin-request"
-        lambda_arn = module.lambda_edge_function["redirects"].qualified_arn
-        include_body = false
-      }
+    lambda_function_association {
+      event_type = "origin-request"
+      lambda_arn = module.lambda_edge_function["rewrite-trailing-slash"].qualified_arn
+      include_body = false
     }
   }
 
