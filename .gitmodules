@@ -1,3 +1,0 @@
-[submodule "cloudfront-authorization-at-edge"]
-	path = cloudfront-authorization-at-edge
-	url = https://github.com/aws-samples/cloudfront-authorization-at-edge
