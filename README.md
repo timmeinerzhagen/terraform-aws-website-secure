@@ -1,125 +1,107 @@
 # WIP terraform-aws-website-secure
-Creates a public or private website behind a cloudfront distribution, with SSL enabled, including support for multiple domain names (e.g. www.example.com as well as example.com). CORS is also configured for you. Cognito hosted UI is put in front of it.
+Creates a  private website behind a cloudfront distribution, with SSL enabled. Custom Cognito hosted UI is put in front of it.
 
 The website files are hosted in an S3 bucket which is also created by the module.
 
 # Usage
 ```hcl-terraform
 module "website" {
-    source = "bwindsor/website/aws"
+    source = "timmeinerzhagen/website-secure/aws"
     
-    deployment_name = "tf-my-project"
-    website_dir = "${path.root}/website_files"
-    additional_files = { "config.yaml" = <<EOF
-a: 1
-b: 2
-EOF
-  }
-    hosted_zone_name = "example.com"
-    custom_domain = "example.com"
-    alternative_custom_domains = ["www.example.com"]
-    template_file_vars = { api_url = "api.mysite.com" }
-    is_spa = false
-    csp_allow_default = ["api.mysite.com"]
-    csp_allow_style = ["'unsafe-inline'"]
-    csp_allow_img = ["data:"]
-    csp_allow_font = []
-    csp_allow_frame = []
-    csp_allow_manifest = []
-    csp_allow_connect = []
-    cache_control_max_age_seconds = 86400
-    mime_types = {}
-    override_file_mime_types = {
-        "myfile.txt": "application/json",
+    name           = "tf-my-project"
+    domain         = "example.com"
+    custom_domain  = "example.com"
+    domain_aliases = ["www.example.com"]
+    is_spa         = false
+    csp            = {
+        allow_default = ["api.mysite.com"]
+        allow_style = ["'unsafe-inline'"]
+        allow_img = ["data:"]
+        allow_font = []
+        allow_frame = []
+        allow_manifest = []
+        allow_connect = []
     }
-    redirects = [{
-        source = '/home',
-        target = '/index.html',
-    }]
-    allow_omit_html_extension = false
 
-    is_private = true
-    auth_type = "COGNITO"
-    
-    # These settings are requred when is_private is true and auth_type is BASIC
-    basic_auth_username = "username"
-    basic_auth_password = "password"
-  
-    # This setting is required when is_private is true and auth_type is COGNITO
-    auth_config_path = "authConfig.json"
+    cloudfront_cache_duration = 86400
 
-    # These settings are only used when is_private is true and auth_type is COGNITO
-    create_cognito_pool = true
-    refresh_auth_path = "/refreshauth"
-    logout_path = "/"
-    parse_auth_path = "/parseauth"
-    refresh_token_validity_days = 3650
-    oauth_scopes = ["openid"]
-    additional_redirect_urls = ["http://localhost:3000"]  // Useful for development purposes
-    
-    # This setting is only required when is_private is true and auth_type is COGNITO and create_cognito_pool is true
-    auth_domain_prefix = "mydomain"
-    
-    # This block is required when is_private is true and auth_type is COGNITO create_cognito_pool is false. Otherwise it is ignored.
-    cognito = {
-        user_pool_arn = aws_cognito_user_pool.mypool.arn
-        user_pool_id = aws_cognito_user_pool.mypool.id
-        client_id = aws_cognito_user_pool_client.myclient.id
-        auth_domain = "https://mydomain.auth.eu-west-1.amazoncognito.com"
-    }
-  
-    # Optional
-    create_data_bucket = true
-    data_path = "/data"
+    cognito_path_refresh_auth       = "/refreshauth"
+    cognito_path_logout             = "/"
+    cognito_path_parse_auth         = "/parseauth"
+    cognito_refresh_token_validity  = 3650
+    cognito_additional_redirects    = ["http://localhost:3000"]  // Useful for development purposes
+    cognito_domain_prefix           = "login"
 }
+
 ```
+## Requirements
 
-### Inputs
-Ensure environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set.
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.2 |
+| <a name="requirement_archive"></a> [archive](#requirement\_archive) | >= 2.2.0, < 3.0.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 3.50.0, < 4.0.0 |
 
-* **deployment_name** A unique string to use for this module to make sure resources do not clash with others
-* **website_dir** A folder containing all the files for your website. The contents of this folder, including all subfolders, will be stored in an S3 website and served as your website
-* **additional_files** A mapping from file name (in S3) to file contents. For each (key,value) pair, a file will be created in S3 with the given key, with contents given by value
-* **hosted_zone_name** The name of the hosted zone in Route53 where the SSL certificates will be created
-* **custom_domain** The primary domain name to use for the website
-* **alternative_custom_domains** A list of any alternative domain names. Typically this would just contain the same as *custom_domain* but prefixed by `www.`
-* **template_file_vars** A mapping from substitution variable name to value. Any files inside `website_dir` which end in `.template` will be processed by Terraform's template provider, passing these variables for substitution. The file will have the `.template` suffix removed when uploaded to S3
-* **is_spa** If your website is a single page application (SPA), this sets up the cloudfront redirects such that whenever an item is not found, the file `index.html` is returned instead
-* **csp_allow_default** List of default domains to include in the Content Security Policy. Typically you would list the URL of your API here if your pages access that. Always includes `'self'`
-* **csp_allow_script** List of places to allow CSP to load scripts from. Always includes `'self'`
-* **csp_allow_style** List of places to allow CSP to load styles from. Always includes `'self'`
-* **csp_allow_img** List of places to allow CSP to load images from. Always includes `'self'`
-* **csp_allow_font** List of places to allow CSP to load fonts from. Always includes `'self'`
-* **csp_allow_frame** List of places to allow CSP to load iframes from. Always includes `'self'`
-* **csp_allow_manifest** List of places to allow CSP to load manifests from. Always includes `'self'`
-* **csp_allow_connect** List of places to allow CSP to make HTTP requests to. Always includes `'self'`
-* **cache_control_max_age_seconds** Maximum time in seconds to cache items for before checking with the server again for an updated copy. Default is one week
-* **mime_types** Map from file extension to MIME type. Defaults are provided, but you will need to provide any unusual extensions with a MIME type
-* **override_file_mime_types** Map from exact file name to MIME type. If the specified file is available in website_dir, it will be set to the specified MIME type
-* **redirects** List of redirects specifying source and target URLs
-* **allow_omit_html_extension** Boolean, default false. If true, any URL where the final part does not contain a `.` will reference the S3 object with `html` appended. For example `https://example.com/home` would retrieve the file `home.html` from the website S3 bucket.
-* **is_private** Boolean, default true. Whether to make the site private (behind Cognito)
-* **auth_type** String, default `COGNITO`. Method of making site private when `is_private` is true. Set to `COGNITO` to use AWS Cognito. Set to `BASIC` to use HTTP basic auth
-* **basic_auth_username** String, required if `is_private` is `true` and `auth_type` is `BASIC`. Username to use for basic authentication
-* **basic_auth_password** String, required if `is_private` is `true` and `auth_type` is `BASIC`. Password to use for basic authentication
-* **create_cognito_pool** Boolean, default true. Whether to create a Cognito pool for authentication. If false, a `cognito` configuration must be provided
-* **refresh_auth_path** Path relative to `custom_domain` to redirect to when a token refresh is required
-* **logout_path** Path relative to `custom_domain` to redirect to after logging out
-* **parse_auth_path** Path relative to `custom_domain` to redirect to upon successful authentication
-* **refresh_token_validity_days** Time until the refresh token expires and the user will be required to log in again
-* **oauth_scopes** List of auth scopes to grant (or which are granted, if a Cognito pool is created externally). Options include phone, email, profile, openid, aws.cognito.signin.user.admin
-* **additional_redirect_urls** List of additional allowed redirect URLs for Cognito hosted UI to redirect to (such as "http://localhost:3000"). Do not use localhost in production
-* **auth_domain_prefix** The first part of the hosted UI login domain, as in https://{AUTH_DOMAIN_PREFIX}.auth.region.amazoncognito.com
-* **auth_config_path** The path at which to place a file containing the Cognito auth configuration. This can then be read by your Javascript to configure your auth provider.
-* **cognito** Configuration block for an existing user pool. Required when `create_cognito_pool` is false
-    * **user_pool_arn** User pool ARN of an existing user pool
-    * **user_pool_id** User pool ID of the existing user pool
-    * **client_id** Client ID of an existing user pool client
-    * **auth_domain** Domain name for the existing hosted UI. Could be in the format https://{AUTH_DOMAIN_PREFIX}.auth.region.amazoncognito.com or could be a custom domain
-* **create_data_bucket** Whether to create an empty S3 bucket, the contents of which will be available under data_path (default /data)
-* **data_path** String, default `/data`. Only used if create_data_bucket is true. This is the path under which the contents of the data bucket will be hosted.
+## Providers
 
-### Outputs
-* **url** The URL on which the home page of the website can be reached
-* **alternate_urls** Alternate URLs which also point to the same home page as *url* does
-* **data_bucket_name** If create_data_bucket is true, this contains the created data bucket name
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 3.63.0 |
+| <a name="provider_aws.us-east-1"></a> [aws.us-east-1](#provider\_aws.us-east-1) | 3.63.0 |
+| <a name="provider_random"></a> [random](#provider\_random) | 3.1.0 |
+
+## Modules
+
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_lambda_edge_function"></a> [lambda\_edge\_function](#module\_lambda\_edge\_function) | ./modules/lambda_edge_function | n/a |
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [aws_acm_certificate.ssl_certificate](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate) | resource |
+| [aws_acm_certificate_validation.cert](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate_validation) | resource |
+| [aws_cloudfront_distribution.s3_distribution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_distribution) | resource |
+| [aws_cloudfront_origin_access_identity.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_origin_access_identity) | resource |
+| [aws_cognito_user_pool.user_pool](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cognito_user_pool) | resource |
+| [aws_cognito_user_pool_client.user_pool_client](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cognito_user_pool_client) | resource |
+| [aws_cognito_user_pool_domain.login](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cognito_user_pool_domain) | resource |
+| [aws_iam_role.iam_for_lambda_edge](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy.lambda_log_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_route53_record.cognito](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) | resource |
+| [aws_route53_record.record_cert](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) | resource |
+| [aws_route53_record.website](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) | resource |
+| [aws_s3_bucket.website](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
+| [aws_s3_bucket_policy.website_access_from_cloudfront](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
+| [aws_s3_bucket_public_access_block.block_direct_access](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block) | resource |
+| [random_password.nonce_secret](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) | resource |
+| [aws_iam_policy_document.s3_website](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
+| [aws_route53_zone.hosted_zone](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/route53_zone) | data source |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_cloudfront_cache_duration"></a> [cloudfront\_cache\_duration](#input\_cloudfront\_cache\_duration) | Maximum time in seconds to cache items for before checking with the server again for an updated copy. Default is one week | `number` | `604800` | no |
+| <a name="input_cognito_additional_redirects"></a> [cognito\_additional\_redirects](#input\_cognito\_additional\_redirects) | Additional URLs to allow cognito redirects to | `list(string)` | `[]` | no |
+| <a name="input_cognito_domain_prefix"></a> [cognito\_domain\_prefix](#input\_cognito\_domain\_prefix) | The first part of the hosted UI login domain, as in https://[COGNITO_DOMAIN_PREFIX].[CUSTOM_DOMAIN]/ | `string` | `"login"` | no |
+| <a name="input_cognito_path_logout"></a> [cognito\_path\_logout](#input\_cognito\_path\_logout) | Path relative to custom\_domain to redirect to after logging out | `string` | `"/"` | no |
+| <a name="input_cognito_path_parse_auth"></a> [cognito\_path\_parse\_auth](#input\_cognito\_path\_parse\_auth) | Path relative to custom\_domain to redirect to upon successful authentication | `string` | `"/parseauth"` | no |
+| <a name="input_cognito_path_refresh_auth"></a> [cognito\_path\_refresh\_auth](#input\_cognito\_path\_refresh\_auth) | Path relative to `custom_domain` to redirect to when a token refresh is required | `string` | `"/refreshauth"` | no |
+| <a name="input_cognito_refresh_token_validity"></a> [cognito\_refresh\_token\_validity](#input\_cognito\_refresh\_token\_validity) | Time until the refresh token expires and the user will be required to log in again | `number` | `3650` | no |
+| <a name="input_content_html_rewrite"></a> [content\_html\_rewrite](#input\_content\_html\_rewrite) | Boolean, default false. If true, any URL where the final part does not contain a `.` will reference the S3 object with `html` appended. For example `https://example.com/home` would retrieve the file `home.html` from the website S3 bucket. | `bool` | `false` | no |
+| <a name="input_csp"></a> [csp](#input\_csp) | List of default domains to include in the Content Security Policy. Typically you would list the URL of your API here if your pages access that. Always includes `'self'`. | <pre>object({<br>    allow_default  = list(string),<br>    allow_script   = list(string),<br>    allow_style    = list(string),<br>    allow_img      = list(string),<br>    allow_font     = list(string),<br>    allow_frame    = list(string),<br>    allow_manifest = list(string),<br>    allow_connect  = list(string)<br>  })</pre> | <pre>{<br>  "allow_connect": [],<br>  "allow_default": [],<br>  "allow_font": [<br>    "https://fonts.gstatic.com"<br>  ],<br>  "allow_frame": [],<br>  "allow_img": [],<br>  "allow_manifest": [],<br>  "allow_script": [],<br>  "allow_style": []<br>}</pre> | no |
+| <a name="input_domain"></a> [domain](#input\_domain) | The primary domain name to use for the website | `string` | n/a | yes |
+| <a name="input_domain_aliases"></a> [domain\_aliases](#input\_domain\_aliases) | A set of any alternative domain names. Typically this would just contain the same as custom\_domain but prefixed by www. | `set(string)` | `[]` | no |
+| <a name="input_is_spa"></a> [is\_spa](#input\_is\_spa) | If your website is a single page application (SPA), this sets up the cloudfront redirects such that whenever an item is not found, the file `index.html` is returned instead. | `bool` | `false` | no |
+| <a name="input_name"></a> [name](#input\_name) | A unique string to use for this module to make sure resources do not clash with others | `string` | n/a | yes |
+| <a name="input_route53_zone_name"></a> [route53\_zone\_name](#input\_route53\_zone\_name) | The name of the hosted zone in Route53 where the SSL certificates will be created | `string` | n/a | yes |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| <a name="output_alternate_urls"></a> [alternate\_urls](#output\_alternate\_urls) | Alternate URLs of the website |
+| <a name="output_url"></a> [url](#output\_url) | URL of the main website |
