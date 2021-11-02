@@ -47,13 +47,6 @@ variable "csp" {
     allow_connect  = []
   }
 }
-
-variable "cloudfront_cache_duration" {
-  description = "Maximum time in seconds to cache items for before checking with the server again for an updated copy. Default is one week"
-  type        = number
-  default     = 604800
-}
-
 variable "cognito_path_refresh_auth" {
   description = "Path relative to `custom_domain` to redirect to when a token refresh is required"
   default     = "/refreshauth"

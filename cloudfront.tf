@@ -1,164 +1,148 @@
-locals {
-  s3_origin_id      = "${var.name}-S3-website"
-  dummy_origin_id   = "${var.name}-dummy-origin"
-}
+data "aws_canonical_user_id" "current" {}
 
-resource "aws_cloudfront_origin_access_identity" "main" {
-  comment = "Created for ${var.name}"
-}
-
-resource "aws_cloudfront_distribution" "s3_distribution" {
-
-  // S3 main origin
-  origin {
-    domain_name = aws_s3_bucket.website.bucket_regional_domain_name
-    origin_id   = local.s3_origin_id
-    s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.main.cloudfront_access_identity_path
-    }
-  }
-
-  // Dummy origin for requests which are handled by lambda@edge
-  origin {
-    domain_name = "example.com"
-    origin_id   = local.dummy_origin_id
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "match-viewer"
-      origin_ssl_protocols = ["SSLv3", "TLSv1", "TLSv1.1", "TLSv1.2"]
-    }
-  }
-
-  enabled             = true
-  is_ipv6_enabled     = true
-  default_root_object = "index.html"
-
-  // Main behaviour
-  default_cache_behavior {
-    compress = true
-    allowed_methods = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"] 
-    cached_methods = ["GET", "HEAD"]
-
-    forwarded_values {
-      query_string = true
-      cookies {
-        forward = "none"
-      }
-    }
-    target_origin_id       = local.s3_origin_id
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = var.cloudfront_cache_duration
-    default_ttl            = var.cloudfront_cache_duration
-    max_ttl                = var.cloudfront_cache_duration
-    smooth_streaming       = false
-
-    lambda_function_association {
-      event_type = "viewer-request"
-      lambda_arn = module.lambda_edge_function["check-auth"].qualified_arn
-    }
-
-    lambda_function_association {
-      event_type   = "origin-response"
-      lambda_arn   = module.lambda_edge_function["http-headers"].qualified_arn
-      include_body = false
-    }
-
-    lambda_function_association {
-      event_type   = "origin-request"
-      lambda_arn   = module.lambda_edge_function["rewrite-trailing-slash"].qualified_arn
-      include_body = false
-    }
-  }
-
-  // Cache behaviour for parse-auth
-  ordered_cache_behavior {
-    compress = true
-    allowed_methods = ["HEAD", "GET", "OPTIONS"]
-    cached_methods = ["HEAD", "GET"]
-    path_pattern           = var.cognito_path_parse_auth
-    target_origin_id       = local.dummy_origin_id
-    viewer_protocol_policy = "redirect-to-https"
-    forwarded_values {
-      query_string = true
-      cookies {
-        forward = "none"
-      }
-    }
-
-    lambda_function_association {
-      event_type = "viewer-request"
-      lambda_arn = module.lambda_edge_function["parse-auth"].qualified_arn
-    }
-  }
-
-  // Cache behaviour for refresh-auth
-  ordered_cache_behavior {
-    compress = true
-    allowed_methods = ["HEAD", "GET", "OPTIONS"]
-    cached_methods = ["HEAD", "GET"]
-    path_pattern           = var.cognito_path_refresh_auth
-    target_origin_id       = local.dummy_origin_id
-    viewer_protocol_policy = "redirect-to-https"
-    forwarded_values {
-      query_string = true
-      cookies {
-        forward = "none"
-      }
-    }
-
-    lambda_function_association {
-      event_type = "viewer-request"
-      lambda_arn = module.lambda_edge_function["refresh-auth"].qualified_arn
-    }
-  }
-
-  // Cache behaviour for logout-path
-  ordered_cache_behavior {
-    compress = true
-    allowed_methods = ["HEAD", "GET", "OPTIONS"]
-    cached_methods = ["HEAD", "GET"]
-    path_pattern           = var.cognito_path_logout
-    target_origin_id       = local.dummy_origin_id
-    viewer_protocol_policy = "redirect-to-https"
-    forwarded_values {
-      query_string = true
-      cookies {
-        forward = "none"
-      }
-    }
-
-    lambda_function_association {
-      event_type = "viewer-request"
-      lambda_arn = module.lambda_edge_function["sign-out"].qualified_arn
-    }
-  }
-
-  price_class = "PriceClass_100"
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
+module "cloudfront" {
+  source  = "terraform-aws-modules/cloudfront/aws"
+  version = "2.8.0"
 
   aliases = [var.domain]
+  
+  is_ipv6_enabled     = true
+  default_root_object = "index.html"
+  price_class = "PriceClass_100"
 
-  viewer_certificate {
-    acm_certificate_arn = aws_acm_certificate_validation.cert.certificate_arn
+  create_origin_access_identity = true
+  origin_access_identities = {
+    website = "Access website content"
+  }
+
+  origin = {
+    s3 = {
+      domain_name = module.website-bucket.s3_bucket_bucket_regional_domain_name
+      s3_origin_config = {
+        origin_access_identity = "website"
+      }
+    }
+
+    dummy = {
+      domain_name = "example.com"
+      custom_origin_config ={
+        http_port              = 80
+        https_port             = 443
+        origin_protocol_policy = "match-viewer"
+        origin_ssl_protocols = ["TLSv1", "TLSv1.1", "TLSv1.2"]
+      }
+    }
+  }
+
+  default_cache_behavior = {
+    target_origin_id       = "s3"
+    viewer_protocol_policy = "allow-all"
+
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods  = ["GET", "HEAD"]
+    compress        = true
+    query_string    = true
+
+    lambda_function_association = {
+        viewer-request = {
+          lambda_arn   = module.lambda_function["check-auth"].lambda_function_qualified_arn
+        }
+
+        origin-response = {
+          lambda_arn   = module.lambda_function["http-headers"].lambda_function_qualified_arn
+          include_body = false
+        }
+
+        origin-request = {
+          lambda_arn   = module.lambda_function["rewrite-trailing-slash"].lambda_function_qualified_arn
+          include_body = false
+        }
+      }
+  }
+
+  ordered_cache_behavior = [
+    {
+      path_pattern           = var.cognito_path_parse_auth
+      target_origin_id       = "dummy"
+      viewer_protocol_policy = "redirect-to-https"
+
+      allowed_methods = ["GET", "HEAD", "OPTIONS"]
+      cached_methods  = ["GET", "HEAD"]
+      compress        = true
+      query_string    = true
+
+      lambda_function_association = {
+        viewer-request = {
+          lambda_arn   = module.lambda_function["parse-auth"].lambda_function_qualified_arn
+        }
+      }
+    },
+    {
+      path_pattern           = var.cognito_path_refresh_auth
+      target_origin_id       = "dummy"
+      viewer_protocol_policy = "redirect-to-https"
+
+      allowed_methods = ["GET", "HEAD", "OPTIONS"]
+      cached_methods  = ["GET", "HEAD"]
+      compress        = true
+      query_string    = true
+
+      lambda_function_association = {
+        viewer-request = {
+          lambda_arn   = module.lambda_function["refresh-auth"].lambda_function_qualified_arn
+        }
+      }
+    },
+    {
+      path_pattern           = var.cognito_path_logout
+      target_origin_id       = "dummy"
+      viewer_protocol_policy = "redirect-to-https"
+
+      allowed_methods = ["GET", "HEAD", "OPTIONS"]
+      cached_methods  = ["GET", "HEAD"]
+      compress        = true
+      query_string    = true
+
+      lambda_function_association = {
+        viewer-request = {
+          lambda_arn   = module.lambda_function["sign-out"].lambda_function_qualified_arn
+        }
+      }
+    },
+    
+  ]
+
+  viewer_certificate = {
+    acm_certificate_arn = module.acm.acm_certificate_arn
     ssl_support_method  = "sni-only"
   }
 
-  # Custom error response to make SPA work, always return index.html for all routes
-  dynamic "custom_error_response" {
-    for_each = var.is_spa ? [
-    0] : []
-    content {
-      error_code            = 404
-      error_caching_min_ttl = 0
-      response_page_path    = "/index.html"
-      response_code         = 200
-    }
-  }
+}
 
+module "website-bucket" {
+  source  = "terraform-aws-modules/s3-bucket/aws"
+  version = "~> 2.0"
+
+  bucket        = "s3-${random_pet.this.id}"
+  force_destroy = true
+}
+
+module "log_bucket" {
+  source  = "terraform-aws-modules/s3-bucket/aws"
+  version = "~> 2.0"
+
+  bucket = "logs-${random_pet.this.id}"
+  acl    = null
+  grant = [{
+    type        = "CanonicalUser"
+    permissions = ["FULL_CONTROL"]
+    id          = data.aws_canonical_user_id.current.id
+    }, {
+    type        = "CanonicalUser"
+    permissions = ["FULL_CONTROL"]
+    id          = "c4c1ede66af53448b93c283ce9448c4ba468c9432aa01d700d3878632f77d2d0"
+    # Ref. https://github.com/terraform-providers/terraform-provider-aws/issues/12512
+    # Ref. https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/AccessLogs.html
+  }]
+  force_destroy = true
 }
