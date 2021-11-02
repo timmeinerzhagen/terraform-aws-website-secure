@@ -1,0 +1,15 @@
+version: 2
+
+updates:
+  - package-ecosystem: "Terraform"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "DEP: "
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "DEP: "
