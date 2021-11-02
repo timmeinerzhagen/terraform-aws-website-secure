@@ -7,14 +7,14 @@ provider "aws" {
 }
 
 module "test_website" {
-  source = "./../.."
+  source = "timmeinerzhagen/website-secure/aws"
 
-  custom_domain = ""
-  deployment_name = ""
-  hosted_zone_name = ""
-  website_dir = ""
+  name = "tf-website-secure"
+  domain = "example.com"
+  route53_zone_name = "example.com"
 
   providers = {
-    aws-us-east-1: aws.us-east-1
+      aws: aws.default
+      aws.us-east-1: aws.us-east-1
   }
-}
+} 
