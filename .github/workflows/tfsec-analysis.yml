@@ -28,7 +28,7 @@ jobs:
       - run: terraform init
 
       - name: Run tfsec
-        uses: tfsec/tfsec-sarif-action@9a83b5c3524f825c020e356335855741fd02745f
+        uses: tfsec/tfsec-sarif-action@868eade2142739cee2153c9ceff9eba4beded067
         with:
           sarif_file: tfsec.sarif         
 
