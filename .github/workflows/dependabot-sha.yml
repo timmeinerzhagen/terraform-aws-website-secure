@@ -3,6 +3,6 @@ jobs:
   sha-comment:
     runs-on: ubuntu-latest
     steps:
-      - uses: timmeinerzhagen/dependabot-sha-comment-action@361ffcee05ff434d709f36f34a170bda6e3c33c1 # 0.0.2
+      - uses: timmeinerzhagen/dependabot-sha-comment-action@d70d13df8ee8e17184bb5b2170973d9b4c78b31c # 0.0.4
         with:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
