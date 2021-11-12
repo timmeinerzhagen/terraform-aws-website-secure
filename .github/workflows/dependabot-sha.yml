@@ -1,0 +1,8 @@
+on: [pull_request_target]
+jobs:
+  sha-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: timmeinerzhagen/dependabot-sha-comment-action@d70d13df8ee8e17184bb5b2170973d9b4c78b31c # 0.0.4
+        with:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

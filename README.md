@@ -1,4 +1,4 @@
-# WIP terraform-aws-website-secure
+# WIP terraform-aws-website-secure v0.2.0
 Creates a  private website behind a cloudfront distribution, with SSL enabled. Custom Cognito hosted UI is put in front of it.
 
 The website files are hosted in an S3 bucket which is also created by the module.
