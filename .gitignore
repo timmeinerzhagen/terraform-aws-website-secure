@@ -36,3 +36,5 @@ terraform.rc
 .terraform.lock.hcl
 
 tmp/
+*.zip
+external/**/configuration.json

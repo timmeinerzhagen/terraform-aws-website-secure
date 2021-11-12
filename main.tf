@@ -1,40 +1,57 @@
 locals {
-  callback_urls         = concat(["${local.url}${var.cognito_path_parse_auth}"], formatlist("%s${var.cognito_path_parse_auth}", var.cognito_additional_redirects))
-  logout_urls           = concat(["${local.url}${var.cognito_path_logout}"], formatlist("%s${var.cognito_path_logout}", var.cognito_additional_redirects))
-
+  callback_urls         = concat(["https://${var.domain}${var.cognito_path_parse_auth}"], formatlist("%s${var.cognito_path_parse_auth}", var.cognito_additional_redirects))
+  logout_urls           = concat(["https://${var.domain}${var.cognito_path_logout}"], formatlist("%s${var.cognito_path_logout}", var.cognito_additional_redirects))
+  functions = toset(
+    ["check-auth", "http-headers", "parse-auth", "refresh-auth", "rewrite-trailing-slash", "sign-out"]
+  )
 }
-
-data "aws_region" "current" {}
 
 resource "random_pet" "this" {
   length = 2
 }
+data "aws_route53_zone" "this" {
+  name = var.domain
+}
 
 module "lambda_function" {
-  for_each = toset(
-    ["check-auth", "http-headers", "parse-auth", "refresh-auth", "rewrite-trailing-slash", "sign-out"]
-  )
+  for_each = local.functions
 
-  source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 2.0"
+  source  = "./modules/lambda"
 
-  function_name = "${var.name}-${each.value}"
-  source_path   = "${path.module}/external/cloudfront-authorization-at-edge/${each.value}.js"  
-  handler       = "main.handler"
-  runtime       = "nodejs12.x"
-
-  publish        = true
-  lambda_at_edge = true
+  name      = var.name
+  function  = each.value
+  configuration = jsondecode(<<EOF
+{
+  "userPoolArn": "${module.cognito-user-pool.arn}",
+  "clientId": "${module.cognito-user-pool.client_ids[0]}",
+  "clientSecret": "${module.cognito-user-pool.client_secrets[0]}",
+  "oauthScopes": ["openid"],
+  "cognitoAuthDomain": "${var.cognito_domain_prefix}.${var.domain}",
+  "redirectPathSignIn": "${var.cognito_path_parse_auth}",
+  "redirectPathSignOut": "${var.cognito_path_logout}",
+  "redirectPathAuthRefresh": "${var.cognito_path_refresh_auth}",
+  "cookieSettings": { "idToken": null, "accessToken": null, "refreshToken": null, "nonce": null },
+  "mode": "spaMode",
+  "httpHeaders": {
+      "Content-Security-Policy": "default-src 'none'; img-src 'self'; script-src 'self' https://code.jquery.com https://stackpath.bootstrapcdn.com; style-src 'self' 'unsafe-inline' https://stackpath.bootstrapcdn.com; object-src 'none'; connect-src 'self' https://*.amazonaws.com https://*.amazoncognito.com",
+      "Strict-Transport-Security": "max-age=31536000; includeSubdomains; preload",
+      "Referrer-Policy": "same-origin",
+      "X-XSS-Protection": "1; mode=block",
+      "X-Frame-Options": "DENY",
+      "X-Content-Type-Options":  "nosniff"
+  },
+  "logLevel": "none",
+  "nonceSigningSecret": "jvfg108gfhjhg!&%j91kt",
+  "cookieCompatibility": "amplify",
+  "additionalCookies": {},
+  "requiredGroup": ""
+}
+EOF
+)
 
   providers = {
     aws = aws.us-east-1
   }
-}
-
-
-
-data "aws_route53_zone" "this" {
-  name = var.domain
 }
 
 module "acm" {
@@ -89,4 +106,16 @@ module "cognito-user-pool" {
             logout_urls                          = local.logout_urls
         },
     ]
+}
+
+resource "aws_route53_record" "cognito-domain" {
+  name    = "${var.cognito_domain_prefix}.${var.domain}"
+  type    = "A"
+  zone_id = data.aws_route53_zone.this.zone_id
+  alias {
+    evaluate_target_health = false
+    name                   = module.cognito-user-pool.domain_cloudfront_distribution_arn
+    # This zone_id is fixed
+    zone_id = "Z2FDTNDATAQYW2"
+  }
 }

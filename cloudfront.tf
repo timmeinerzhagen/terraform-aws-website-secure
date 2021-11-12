@@ -127,6 +127,23 @@ module "website-bucket" {
   force_destroy = true
 }
 
+data "aws_iam_policy_document" "s3_policy" {
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = ["${module.website-bucket.s3_bucket_arn}/*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = module.cloudfront.cloudfront_origin_access_identity_iam_arns
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "bucket_policy" {
+  bucket = module.website-bucket.s3_bucket_id
+  policy = data.aws_iam_policy_document.s3_policy.json
+}
+
 module "log_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 2.0"
