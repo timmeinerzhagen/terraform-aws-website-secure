@@ -125,6 +125,26 @@ module "website-bucket" {
 
   bucket        = "s3-${random_pet.this.id}"
   force_destroy = true
+  restrict_public_buckets = true
+  ignore_public_acls      = true
+
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        kms_master_key_id = aws_kms_key.objects.arn
+        sse_algorithm     = "aws:kms"
+      }
+    }
+  }
+
+  versioning = {
+    enabled = true
+  }
+
+  logging = {
+    target_bucket = module.log_bucket.s3_bucket_id
+    target_prefix = "log/"
+  }
 }
 
 data "aws_iam_policy_document" "s3_policy" {
@@ -161,5 +181,21 @@ module "log_bucket" {
     # Ref. https://github.com/terraform-providers/terraform-provider-aws/issues/12512
     # Ref. https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/AccessLogs.html
   }]
-  force_destroy = true
+
+  force_destroy           = true
+  restrict_public_buckets = true
+  ignore_public_acls      = true
+
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        kms_master_key_id = aws_kms_key.objects.arn
+        sse_algorithm     = "aws:kms"
+      }
+    }
+  }
+
+  versioning = {
+    enabled = true
+  }
 }
