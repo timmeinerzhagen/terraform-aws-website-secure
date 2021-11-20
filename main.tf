@@ -104,8 +104,13 @@ module "cognito-user-pool" {
       allowed_oauth_scopes                 = ["openid"]
       callback_urls                        = local.callback_urls
       logout_urls                          = local.logout_urls
+
+      supported_identity_providers = var.identity_providers.*.provider_name
     },
   ]
+
+  identity_providers = var.identity_providers
+  
 }
 
 resource "aws_route53_record" "cognito-domain" {

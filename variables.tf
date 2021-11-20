@@ -84,3 +84,9 @@ variable "content_html_rewrite" {
   default     = false
   type        = bool
 }
+
+variable "identity_providers" {
+  description = "Identity Providers e.g. Google, GitHub, or general."
+  default     = []
+  type        = any
+}
