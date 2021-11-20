@@ -1,6 +1,6 @@
 locals {
-  callback_urls         = concat(["https://${var.domain}${var.cognito_path_parse_auth}"], formatlist("%s${var.cognito_path_parse_auth}", var.cognito_additional_redirects))
-  logout_urls           = concat(["https://${var.domain}${var.cognito_path_logout}"], formatlist("%s${var.cognito_path_logout}", var.cognito_additional_redirects))
+  callback_urls = concat(["https://${var.domain}${var.cognito_path_parse_auth}"], formatlist("%s${var.cognito_path_parse_auth}", var.cognito_additional_redirects))
+  logout_urls   = concat(["https://${var.domain}${var.cognito_path_logout}"], formatlist("%s${var.cognito_path_logout}", var.cognito_additional_redirects))
   functions = toset(
     ["check-auth", "http-headers", "parse-auth", "refresh-auth", "rewrite-trailing-slash", "sign-out"]
   )
@@ -16,10 +16,10 @@ data "aws_route53_zone" "this" {
 module "lambda_function" {
   for_each = local.functions
 
-  source  = "./modules/lambda"
+  source = "./modules/lambda"
 
-  name      = var.name
-  function  = each.value
+  name     = var.name
+  function = each.value
   configuration = jsondecode(<<EOF
 {
   "userPoolArn": "${module.cognito-user-pool.arn}",
@@ -47,7 +47,7 @@ module "lambda_function" {
   "requiredGroup": ""
 }
 EOF
-)
+  )
 
   providers = {
     aws = aws.us-east-1
@@ -86,26 +86,26 @@ module "records" {
 }
 
 module "cognito-user-pool" {
-    source  = "lgallard/cognito-user-pool/aws"
-    version = "0.14.2"
+  source  = "lgallard/cognito-user-pool/aws"
+  version = "0.14.2"
 
-    user_pool_name         = "${var.name}-userpool"
-    domain                 = "${var.cognito_domain_prefix}.${var.domain}"
-    domain_certificate_arn = module.acm.acm_certificate_arn
+  user_pool_name         = "${var.name}-userpool"
+  domain                 = "${var.cognito_domain_prefix}.${var.domain}"
+  domain_certificate_arn = module.acm.acm_certificate_arn
 
-    clients = [
-        {
-            name                                 = "${var.name}-client"
-            supported_identity_providers         = ["COGNITO"]
+  clients = [
+    {
+      name                         = "${var.name}-client"
+      supported_identity_providers = ["COGNITO"]
 
-            generate_secret                      = true
-            allowed_oauth_flows_user_pool_client = true
-            allowed_oauth_flows                  = ["code"]
-            allowed_oauth_scopes                 = ["openid"]
-            callback_urls                        = local.callback_urls
-            logout_urls                          = local.logout_urls
-        },
-    ]
+      generate_secret                      = true
+      allowed_oauth_flows_user_pool_client = true
+      allowed_oauth_flows                  = ["code"]
+      allowed_oauth_scopes                 = ["openid"]
+      callback_urls                        = local.callback_urls
+      logout_urls                          = local.logout_urls
+    },
+  ]
 }
 
 resource "aws_route53_record" "cognito-domain" {
