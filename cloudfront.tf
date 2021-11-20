@@ -5,10 +5,10 @@ module "cloudfront" {
   version = "2.9.0"
 
   aliases = [var.domain]
-  
+
   is_ipv6_enabled     = true
   default_root_object = "index.html"
-  price_class = "PriceClass_100"
+  price_class         = "PriceClass_100"
 
   create_origin_access_identity = true
   origin_access_identities = {
@@ -25,11 +25,11 @@ module "cloudfront" {
 
     dummy = {
       domain_name = "example.com"
-      custom_origin_config ={
+      custom_origin_config = {
         http_port              = 80
         https_port             = 443
         origin_protocol_policy = "match-viewer"
-        origin_ssl_protocols = ["TLSv1", "TLSv1.1", "TLSv1.2"]
+        origin_ssl_protocols   = ["TLSv1.2"]
       }
     }
   }
@@ -44,20 +44,20 @@ module "cloudfront" {
     query_string    = true
 
     lambda_function_association = {
-        viewer-request = {
-          lambda_arn   = module.lambda_function["check-auth"].lambda_function_qualified_arn
-        }
-
-        origin-response = {
-          lambda_arn   = module.lambda_function["http-headers"].lambda_function_qualified_arn
-          include_body = false
-        }
-
-        origin-request = {
-          lambda_arn   = module.lambda_function["rewrite-trailing-slash"].lambda_function_qualified_arn
-          include_body = false
-        }
+      viewer-request = {
+        lambda_arn = module.lambda_function["check-auth"].lambda_function_qualified_arn
       }
+
+      origin-response = {
+        lambda_arn   = module.lambda_function["http-headers"].lambda_function_qualified_arn
+        include_body = false
+      }
+
+      origin-request = {
+        lambda_arn   = module.lambda_function["rewrite-trailing-slash"].lambda_function_qualified_arn
+        include_body = false
+      }
+    }
   }
 
   ordered_cache_behavior = [
@@ -73,7 +73,7 @@ module "cloudfront" {
 
       lambda_function_association = {
         viewer-request = {
-          lambda_arn   = module.lambda_function["parse-auth"].lambda_function_qualified_arn
+          lambda_arn = module.lambda_function["parse-auth"].lambda_function_qualified_arn
         }
       }
     },
@@ -89,7 +89,7 @@ module "cloudfront" {
 
       lambda_function_association = {
         viewer-request = {
-          lambda_arn   = module.lambda_function["refresh-auth"].lambda_function_qualified_arn
+          lambda_arn = module.lambda_function["refresh-auth"].lambda_function_qualified_arn
         }
       }
     },
@@ -105,16 +105,20 @@ module "cloudfront" {
 
       lambda_function_association = {
         viewer-request = {
-          lambda_arn   = module.lambda_function["sign-out"].lambda_function_qualified_arn
+          lambda_arn = module.lambda_function["sign-out"].lambda_function_qualified_arn
         }
       }
     },
-    
+
   ]
 
   viewer_certificate = {
     acm_certificate_arn = module.acm.acm_certificate_arn
     ssl_support_method  = "sni-only"
+  }
+
+  logging_config = {
+    bucket = module.log_bucket.s3_bucket_bucket_domain_name
   }
 
 }
@@ -123,8 +127,29 @@ module "website-bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 2.0"
 
-  bucket        = "s3-${random_pet.this.id}"
-  force_destroy = true
+  bucket                  = "s3-${random_pet.this.id}"
+  force_destroy           = true
+  restrict_public_buckets = true
+  ignore_public_acls      = true
+  block_public_acls       = true
+  block_public_policy     = true
+
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        sse_algorithm     = "aws:kms"
+      }
+    }
+  }
+
+  versioning = {
+    enabled = true
+  }
+
+  logging = {
+    target_bucket = module.log_bucket.s3_bucket_id
+    target_prefix = "log/"
+  }
 }
 
 data "aws_iam_policy_document" "s3_policy" {
@@ -161,5 +186,22 @@ module "log_bucket" {
     # Ref. https://github.com/terraform-providers/terraform-provider-aws/issues/12512
     # Ref. https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/AccessLogs.html
   }]
-  force_destroy = true
+
+  force_destroy           = true
+  restrict_public_buckets = true
+  ignore_public_acls      = true
+  block_public_acls       = true
+  block_public_policy     = true
+
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        sse_algorithm     = "aws:kms"
+      }
+    }
+  }
+
+  versioning = {
+    enabled = true
+  }
 }
