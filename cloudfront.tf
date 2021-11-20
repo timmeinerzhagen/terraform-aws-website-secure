@@ -29,7 +29,7 @@ module "cloudfront" {
         http_port              = 80
         https_port             = 443
         origin_protocol_policy = "match-viewer"
-        origin_ssl_protocols = ["TLSv1.2"]
+        origin_ssl_protocols = ["TLSv1.2_2021"]
       }
     }
   }
@@ -115,6 +115,10 @@ module "cloudfront" {
   viewer_certificate = {
     acm_certificate_arn = module.acm.acm_certificate_arn
     ssl_support_method  = "sni-only"
+  }
+
+  logging_config = {
+    bucket = module.log_bucket.s3_bucket_bucket_domain_name
   }
 
 }
