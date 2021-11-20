@@ -48,6 +48,9 @@ module "lambda_function" {
   create_package         = false
   local_existing_package = "${local.path}.zip"
 
+  attach_tracing_policy = true
+  tracing_mode          = "Active"
+
   depends_on = [
     data.archive_file.archive,
     local_file.function_configuration,
