@@ -33,6 +33,6 @@ jobs:
           sarif_file: tfsec.sarif         
 
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@0182a2c78c8a55b763909348834ed54d735ab3e2 # v2.1.7
+        uses: github/codeql-action/upload-sarif@1ed1437484560351c5be56cf73a48a279d116b78 # v2.1.7
         with:
           sarif_file: tfsec.sarif  
