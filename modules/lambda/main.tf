@@ -3,7 +3,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 3.61.0, < 5.0.0"
+      version = ">= 4.9.0, < 5.0.0"
     }
     archive = {
       source  = "hashicorp/archive"
@@ -36,7 +36,7 @@ data "archive_file" "archive" {
 
 module "lambda_function" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 3.1"
+  version = "3.2.0"
 
   function_name = "${var.name}-${var.function}"
   handler       = "bundle.handler"
