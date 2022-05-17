@@ -56,7 +56,7 @@ EOF
 
 module "acm" {
   source  = "terraform-aws-modules/acm/aws"
-  version = "~> 3.0"
+  version = "3.4.1"
 
   domain_name               = var.domain
   subject_alternative_names = ["*.${var.domain}"]
@@ -69,7 +69,7 @@ module "acm" {
 
 module "records" {
   source  = "terraform-aws-modules/route53/aws//modules/records"
-  version = "2.6.0" # @todo: revert to "~> 2.0" once 2.1.0 is fixed properly
+  version = "2.6.0"
 
   zone_id = data.aws_route53_zone.this.zone_id
 
