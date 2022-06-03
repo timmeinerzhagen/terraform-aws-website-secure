@@ -87,7 +87,7 @@ module "records" {
 
 module "cognito-user-pool" {
   source  = "lgallard/cognito-user-pool/aws"
-  version = "0.16.0"
+  version = "0.17.0"
 
   user_pool_name         = "${var.name}-userpool"
   domain                 = "${var.cognito_domain_prefix}.${var.domain}"
