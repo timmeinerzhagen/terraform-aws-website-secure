@@ -125,7 +125,7 @@ module "cloudfront" {
 
 module "website-bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "3.2.3"
+  version = "3.2.4"
 
   bucket                  = "s3-${random_pet.this.id}"
   force_destroy           = true
