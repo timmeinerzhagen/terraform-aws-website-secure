@@ -36,7 +36,7 @@ data "archive_file" "archive" {
 
 module "lambda_function" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "3.3.1"
+  version = "4.2.1"
 
   function_name = "${var.name}-${var.function}"
   handler       = "bundle.handler"
