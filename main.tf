@@ -56,7 +56,7 @@ EOF
 
 module "acm" {
   source  = "terraform-aws-modules/acm/aws"
-  version = "4.0.1"
+  version = "4.1.0"
 
   domain_name               = var.domain
   subject_alternative_names = ["*.${var.domain}"]
