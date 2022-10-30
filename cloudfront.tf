@@ -125,7 +125,7 @@ module "cloudfront" {
 
 module "website-bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "3.3.0"
+  version = "3.4.1"
 
   bucket                  = "s3-${random_pet.this.id}"
   force_destroy           = true
@@ -171,7 +171,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 
 module "log_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "3.2.0"
+  version = "3.4.1"
 
   bucket = "logs-${random_pet.this.id}"
   acl    = null
