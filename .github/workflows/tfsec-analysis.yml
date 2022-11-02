@@ -9,6 +9,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
-      - uses: aquasecurity/tfsec-pr-commenter-action@f2c4d295e314be2de23d24231e19db528126aa6a # v1.3.0
+      - uses: aquasecurity/tfsec-pr-commenter-action@7a44c5dcde5dfab737363e391800629e27b6376b # v1.3.1
         with:
           github_token: ${{ github.token }}
