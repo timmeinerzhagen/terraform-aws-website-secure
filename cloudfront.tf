@@ -2,7 +2,7 @@ data "aws_canonical_user_id" "current" {}
 
 module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
-  version = "3.0.1"
+  version = "3.0.3"
 
   aliases = [var.domain]
 
