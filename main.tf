@@ -69,7 +69,7 @@ module "acm" {
 
 module "records" {
   source  = "terraform-aws-modules/route53/aws//modules/records"
-  version = "2.10.1"
+  version = "2.10.2"
 
   zone_id = data.aws_route53_zone.this.zone_id
 
